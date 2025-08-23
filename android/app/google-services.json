@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "199568266847",
+    "project_id": "subvault",
+    "storage_bucket": "subvault.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:199568266847:android:ec43e0bf0e118c16a7adea",
+        "android_client_info": {
+          "package_name": "com.example.subvault"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "199568266847-frpim2iuogvtbftm20iklo8hvlmg4qtk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRDPBdU3lv61NXO_SrBX7s3KnMFnDXdq8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "199568266847-frpim2iuogvtbftm20iklo8hvlmg4qtk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
