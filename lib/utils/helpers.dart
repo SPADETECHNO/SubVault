@@ -3,7 +3,19 @@ import 'package:intl/intl.dart';
 
 class Helpers {
   // Format currency
-  static String formatCurrency(double amount, {String symbol = '\$'}) {
+  static String formatCurrency(double amount, {String currency = 'USD'}) {
+    final symbols = {
+      'USD': '\$', 'EUR': '€', 'GBP': '£', 'INR': '₹',
+      'CAD': 'C\$', 'AUD': 'A\$', 'JPY': '¥',
+    };
+    
+    final symbol = symbols[currency] ?? currency;
+    
+    // Format based on currency (JPY has no decimals, etc.)
+    if (currency == 'JPY') {
+      return '$symbol${amount.toStringAsFixed(0)}';
+    }
+    
     return '$symbol${amount.toStringAsFixed(2)}';
   }
   

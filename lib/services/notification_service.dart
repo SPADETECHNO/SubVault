@@ -355,7 +355,7 @@ class NotificationService {
   ) {
     String amount = Helpers.formatCurrency(
       subscription.price,
-      symbol: subscription.currency == 'USD' ? '\$' : subscription.currency,
+      currency: subscription.currency,
     );
     String date = Helpers.formatShortDate(renewalDate);
 

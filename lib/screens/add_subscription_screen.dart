@@ -33,6 +33,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
   late Animation<Offset> _slideAnimation;
 
   String _selectedCategory = AppConstants.categories.first;
+  String _selectedCurrency = 'USD';
   BillingCycle _selectedBillingCycle = BillingCycle.monthly;
   DateTime _selectedStartDate = DateTime.now();
   String _selectedIconUrl = '';
@@ -46,6 +47,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
     _initializeAnimations();
     _loadInitialData();
     _prefillDataIfEditing();
+    _detectUserCurrency();
   }
 
   void _initializeAnimations() {
@@ -71,6 +73,25 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
     ));
 
     _animationController.forward();
+  }
+
+  void _detectUserCurrency() {
+    try {
+      final locale = Localizations.localeOf(context);
+      final countryCode = locale.countryCode;
+      
+      final currencyMap = {
+        'US': 'USD', 'GB': 'GBP', 'IN': 'INR', 'CA': 'CAD',
+        'AU': 'AUD', 'JP': 'JPY', 'DE': 'EUR', 'FR': 'EUR',
+        'IT': 'EUR', 'ES': 'EUR', 'NL': 'EUR', 'AT': 'EUR',
+      };
+      
+      setState(() {
+        _selectedCurrency = currencyMap[countryCode] ?? 'USD';
+      });
+    } catch (e) {
+      // Keep default USD
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -349,14 +370,28 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                _getServiceIcon(service['name']!),
-                color: AppColors.primary,
-                size: 24,
+                child: Image.asset(
+                  'assets/icons/${service['icon']!}',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to icon if image fails to load
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _getServiceIcon(service['name']!),
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             SizedBox(height: 8),
@@ -375,6 +410,114 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
     );
   }
 
+  Widget _buildCurrencySelector() {
+    final currencies = [
+      {'code': 'USD', 'symbol': '\$', 'name': 'US Dollar'},
+      {'code': 'EUR', 'symbol': '€', 'name': 'Euro'},
+      {'code': 'GBP', 'symbol': '£', 'name': 'British Pound'},
+      {'code': 'INR', 'symbol': '₹', 'name': 'Indian Rupee'},
+      {'code': 'CAD', 'symbol': 'C\$', 'name': 'Dollar'},
+      {'code': 'AUD', 'symbol': 'A\$', 'name': 'Dollar'},
+      {'code': 'JPY', 'symbol': '¥', 'name': 'Japanse Yen'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Currency',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCurrency,
+              isExpanded: true,
+              icon: Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+              items: currencies.map((currency) => DropdownMenuItem(
+                value: currency['code'],
+                child: Row(
+                  children: [
+                    Text(
+                      currency['symbol']!,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            currency['code']!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            currency['name']!,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedCurrency = newValue;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getCurrencySymbol(String currencyCode) {
+    final symbols = {
+      'USD': '\$',
+      'EUR': '€', 
+      'GBP': '£',
+      'INR': '₹',
+      'CAD': 'C\$',
+      'AUD': 'A\$',
+      'JPY': '¥',
+    };
+    return symbols[currencyCode] ?? currencyCode;
+  }
+
   Widget _buildCustomFormSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,6 +533,12 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
             if (value == null || value.trim().isEmpty) {
               return 'Please enter the service name';
             }
+            if (value.trim().length < 2) {
+              return 'Service name must be at least 2 characters';
+            }
+            if (value.trim().length > 50) {
+              return 'Service name is too long';
+            }
             return null;
           },
         ),
@@ -398,11 +547,17 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
         
         // Price and Billing Cycle Row
         Row(
-          children: [
+          children: [ 
+            Expanded(
+              flex: 2,
+              child: _buildCurrencySelector(),
+            ),
+            SizedBox(width: 16),
             Expanded(
               flex: 2,
               child: PriceTextField(
                 controller: _priceController,
+                prefixText: _getCurrencySymbol(_selectedCurrency),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter the price';
@@ -646,7 +801,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
         return Icons.movie;
       case 'spotify':
         return Icons.music_note;
-      case 'disney+':
+      case 'jiohotstar':
         return Icons.movie_creation;
       case 'youtube premium':
         return Icons.play_circle;
@@ -738,6 +893,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
         userId: firebaseService.currentUserId!,
         name: _nameController.text.trim(),
         category: _selectedCategory,
+        currency: _selectedCurrency,
         price: price,
         billingCycle: _selectedBillingCycle,
         nextBilling: nextBilling,
@@ -753,7 +909,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
       );
 
       if (widget.editingSubscription != null) {
-        await firebaseService.updateSubscription(widget.editingSubscription!.id, subscription);
+        await firebaseService.updateSubscription(
+          widget.editingSubscription!.id, 
+          subscription
+        );
         _showSuccessSnackBar('Subscription updated successfully!');
       } else {
         await firebaseService.addSubscription(subscription);
@@ -762,7 +921,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
 
       Navigator.pop(context, true);
     } catch (e) {
-      _showErrorSnackBar(e.toString());
+      String errorMessage = e.toString();
+      if (errorMessage.contains('already exists')) {
+        _showErrorSnackBar('A subscription with this name already exists. Please choose a different name.');
+      } else if (errorMessage.contains('Subscription limit reached')) {
+        _showErrorSnackBar('You\'ve reached your subscription limit. Upgrade to Premium for unlimited subscriptions.');
+      } else {
+        _showErrorSnackBar('Failed to save subscription. Please try again.');
+      }
     } finally {
       if (mounted) {
         setState(() {

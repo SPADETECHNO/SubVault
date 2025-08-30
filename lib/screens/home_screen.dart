@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:subvault/screens/analytics_screen.dart';
+import 'package:subvault/screens/subscription_detail_screen.dart';
+import 'dart:convert';
 import '../services/firebase_service.dart';
 import '../services/revenue_cat_service.dart';
 import '../models/subscription_model.dart';
@@ -19,6 +23,21 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isPremium = false;
   Map<String, double> _spendingData = {'monthly': 0.0, 'yearly': 0.0};
   List<SubscriptionModel> _upcomingRenewals = [];
+  
+  String _selectedCurrency = 'USD';
+  Map<String, double> _exchangeRates = {'USD': 1.0};
+  bool _isLoadingRates = false;
+  
+  // Currency options with symbols
+  final List<Map<String, String>> _currencies = [
+    {'code': 'USD', 'symbol': '\$', 'name': 'US Dollar'},
+    {'code': 'EUR', 'symbol': '€', 'name': 'Euro'},
+    {'code': 'GBP', 'symbol': '£', 'name': 'British Pound'},
+    {'code': 'INR', 'symbol': '₹', 'name': 'Indian Rupee'},
+    {'code': 'CAD', 'symbol': 'C\$', 'name': 'Canadian Dollar'},
+    {'code': 'AUD', 'symbol': 'A\$', 'name': 'Australian Dollar'},
+    {'code': 'JPY', 'symbol': '¥', 'name': 'Japanese Yen'},
+  ];
 
   @override
   void initState() {
@@ -28,8 +47,71 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadInitialData() async {
     await _checkPremiumStatus();
+    await _loadExchangeRates();
     await _loadSpendingData();
     await _loadUpcomingRenewals();
+  }
+
+  Future<void> _loadExchangeRates() async {
+    setState(() {
+      _isLoadingRates = true;
+    });
+    
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.exchangerate-api.com/v4/latest/USD'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final rates = <String, double>{};
+        
+        if (data['rates'] != null) {
+          final ratesData = data['rates'] as Map<String, dynamic>;
+          for (var entry in ratesData.entries) {
+            rates[entry.key] = (entry.value as num).toDouble();
+          }
+        }
+        
+        if (mounted) {
+          setState(() {
+            _exchangeRates = rates.isNotEmpty ? rates : {'USD': 1.0};
+            _isLoadingRates = false;
+          });
+        }
+      } else {
+        throw Exception('Failed to load exchange rates');
+      }
+    } catch (e) {
+      print('Error loading exchange rates: $e');
+      // Use fallback rates
+      if (mounted) {
+        setState(() {
+          _exchangeRates = {
+            'USD': 1.0,
+            'EUR': 0.856,
+            'GBP': 0.741,
+            'INR': 88.1,
+            'CAD': 1.37,
+            'AUD': 1.53,
+            'JPY': 147.04,
+          };
+          _isLoadingRates = false;
+        });
+      }
+    }
+  }
+
+  double _convertCurrency(double amount, String fromCurrency, String toCurrency) {
+    if (fromCurrency == toCurrency) return amount;
+    
+    final fromRate = _exchangeRates[fromCurrency] ?? 1.0;
+    final toRate = _exchangeRates[toCurrency] ?? 1.0;
+    
+    // Convert to USD first, then to target currency
+    final usdAmount = amount / fromRate;
+    return usdAmount * toRate;
   }
 
   Future<void> _checkPremiumStatus() async {
@@ -51,10 +133,30 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
         listen: false,
       );
-      final spendingData = await firebaseService.getSpendingAnalytics();
+      
+      // Get all active subscriptions
+      final subscriptions = await firebaseService.getSubscriptions().first;
+      
+      double monthlyTotal = 0.0;
+      
+      // Calculate total spending in selected currency
+      for (var subscription in subscriptions) {
+        if (subscription.isActive) {
+          final convertedAmount = _convertCurrency(
+            subscription.monthlyEquivalent,
+            subscription.currency,
+            _selectedCurrency,
+          );
+          monthlyTotal += convertedAmount;
+        }
+      }
+      
       if (mounted) {
         setState(() {
-          _spendingData = spendingData;
+          _spendingData = {
+            'monthly': monthlyTotal,
+            'yearly': monthlyTotal * 12,
+          };
         });
       }
     } catch (e) {
@@ -79,6 +181,62 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       print('Error loading upcoming renewals: $e');
     }
+  }
+
+  Widget _buildCurrencyDropdown() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedCurrency,
+          dropdownColor: AppColors.primary,
+          style: TextStyle(color: Colors.white, fontSize: 14),
+          icon: _isLoadingRates 
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(Colors.white70),
+                  ),
+                )
+              : Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 16),
+          items: _currencies.map((currency) => DropdownMenuItem<String>(
+            value: currency['code'],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  currency['symbol']!,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 6),
+                Text(
+                  currency['code']!,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          )).toList(),
+          onChanged: _isLoadingRates ? null : (String? newValue) {
+            if (newValue != null && newValue != _selectedCurrency) {
+              setState(() {
+                _selectedCurrency = newValue;
+              });
+              _loadSpendingData();
+            }
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -167,8 +325,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
-        // Settings Button
         IconButton(
           onPressed: () {
             Navigator.push(
@@ -184,6 +340,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSpendingOverview() {
+    final currencySymbol = _currencies
+        .firstWhere((c) => c['code'] == _selectedCurrency)['symbol']!;
     return Container(
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(20),
@@ -205,17 +363,23 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Monthly Spending',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Monthly Spending',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              _buildCurrencyDropdown(),
+            ],
           ),
           SizedBox(height: 8),
           Text(
-            Helpers.formatCurrency(_spendingData['monthly'] ?? 0.0),
+            '$currencySymbol${_spendingData['monthly']!.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.bold,
@@ -228,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: _buildSpendingStat(
                   'Yearly Total',
-                  Helpers.formatCurrency(_spendingData['yearly'] ?? 0.0),
+                  '$currencySymbol${_spendingData['yearly']!.toStringAsFixed(2)}',
                   Icons.calendar_view_month,
                 ),
               ),
@@ -295,9 +459,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Icons.analytics_outlined,
               AppColors.secondary,
               () {
-                // TODO: Navigate to analytics
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Analytics coming soon!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AnalyticsScreen()),
                 );
               },
             ),
@@ -519,46 +683,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.subscriptions_outlined,
-              size: 80,
-              color: AppColors.textSecondary.withOpacity(0.5),
-            ),
-            SizedBox(height: 24),
-            Text(
-              'No Subscriptions Yet',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Start tracking your subscriptions to take control of your spending',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-            SizedBox(height: 32),
-            PrimaryButton(
-              text: 'Add Your First Subscription',
-              onPressed: _navigateToAddSubscription,
-              icon: Icons.add,
-              width: 250,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildFAB() {
     return FloatingActionButton(
       onPressed: _navigateToAddSubscription,
@@ -579,17 +703,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _viewSubscriptionDetails(SubscriptionModel subscription) {
-    // TODO: Navigate to subscription details
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Subscription details coming soon!')),
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SubscriptionDetailScreen(
+          subscription: subscription,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        _loadInitialData();
+      }
+    });
   }
 
   void _editSubscription(SubscriptionModel subscription) {
-    // TODO: Navigate to edit subscription
-    ScaffoldMessenger.of(
+    Navigator.push(
       context,
-    ).showSnackBar(SnackBar(content: Text('Edit subscription coming soon!')));
+      MaterialPageRoute(
+        builder: (context) => AddSubscriptionScreen(
+          editingSubscription: subscription,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        _loadInitialData();
+      }
+    });
   }
 
   Future<void> _deleteSubscription(SubscriptionModel subscription) async {
@@ -605,7 +745,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           DangerButton(
             text: 'Delete',
-            width: 80,
+            width: 100,
             height: 40,
             onPressed: () => Navigator.pop(context, true),
           ),

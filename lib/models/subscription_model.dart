@@ -104,7 +104,7 @@ class SubscriptionModel {
 
   // Get formatted price with currency
   String get formattedPrice {
-    return Helpers.formatCurrency(price, symbol: currency == 'USD' ? '\$' : currency);
+    return Helpers.formatCurrency(price, currency: currency);
   }
 
   SubscriptionModel copyWith({

@@ -301,7 +301,7 @@ class PriceTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
   final String? errorText;
-  final String currency;
+  final String prefixText; // ✅ NEW: Add this parameter
 
   const PriceTextField({
     Key? key,
@@ -309,26 +309,80 @@ class PriceTextField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.errorText,
-    this.currency = '\$',
+    this.prefixText = '\$', // ✅ Default to $ symbol
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return CustomTextField(
-      label: 'Price',
-      hintText: '0.00',
-      controller: controller,
-      prefixIcon: Icons.attach_money,
-      keyboardType: TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-      ],
-      validator: validator,
-      onChanged: onChanged,
-      errorText: errorText,
-    );
+    Widget build(BuildContext context) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Price',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: controller,
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              validator: validator,
+              onChanged: onChanged,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: '0.00',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
+                ),
+                prefixText: '$prefixText ',
+                prefixStyle: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider, width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
   }
-}
 
 class SearchTextField extends StatelessWidget {
   final TextEditingController? controller;

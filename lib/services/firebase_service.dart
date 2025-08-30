@@ -266,10 +266,11 @@ class FirebaseService extends ChangeNotifier {
       }
 
       // Add subscription to Firestore
+      await _validateUniqueSubscriptionName(subscription.name, subscription.id);
       DocumentReference doc = await _firestore.collection('subscriptions').add(
         subscription.copyWith(userId: currentUser!.uid).toFirestore()
       );
-      
+
       // Schedule notifications for the new subscription
       await NotificationService.scheduleRenewalReminder(
         subscription.copyWith(id: doc.id, userId: currentUser!.uid)
@@ -287,6 +288,7 @@ class FirebaseService extends ChangeNotifier {
     if (currentUser == null) throw 'User not authenticated';
     
     try {
+      await _validateUniqueSubscriptionName(subscription.name, id);
       await _firestore.collection('subscriptions').doc(id).update(
         subscription.toFirestore()
       );
@@ -346,28 +348,61 @@ class FirebaseService extends ChangeNotifier {
     }
   }
 
-  Stream<List<SubscriptionModel>> getSubscriptions({bool activeOnly = true}) {
-    if (currentUser == null) return Stream.value([]);
+  // Private helper method to check for duplicate subscription names
+  Future<void> _validateUniqueSubscriptionName(String name, [String? excludeId]) async {
+    if (currentUser == null) return;
     
-    Query query = _firestore
-        .collection('subscriptions')
-        .where('userId', isEqualTo: currentUser!.uid);
-    
-    if (activeOnly) {
-      query = query.where('isActive', isEqualTo: true);
+    try {
+      final trimmedName = name.trim().toLowerCase();
+      
+      Query query = _firestore
+          .collection('subscriptions')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .where('isActive', isEqualTo: true);
+      
+      QuerySnapshot snapshot = await query.get();
+      
+      // Check if any existing subscription has the same name
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final existingName = (data['name'] as String? ?? '').trim().toLowerCase();
+        
+        // Skip if this is the same document we're updating
+        if (excludeId != null && doc.id == excludeId) continue;
+        
+        if (existingName == trimmedName) {
+          throw Exception('A subscription with the name "$name" already exists.');
+        }
+      }
+    } catch (e) {
+      debugPrint('Validation error: $e');
+      rethrow;
     }
-    
-    return query
-        .orderBy('nextBilling')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SubscriptionModel.fromFirestore(doc))
-            .toList())
-        .handleError((error) {
-          debugPrint('Get subscriptions stream error: $error');
-          return <SubscriptionModel>[];
-        });
   }
+
+
+    Stream<List<SubscriptionModel>> getSubscriptions({bool activeOnly = true}) {
+      if (currentUser == null) return Stream.value([]);
+      
+      Query query = _firestore
+          .collection('subscriptions')
+          .where('userId', isEqualTo: currentUser!.uid);
+      
+      if (activeOnly) {
+        query = query.where('isActive', isEqualTo: true);
+      }
+      
+      return query
+          .orderBy('nextBilling')
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => SubscriptionModel.fromFirestore(doc))
+              .toList())
+          .handleError((error) {
+            debugPrint('Get subscriptions stream error: $error');
+            return <SubscriptionModel>[];
+          });
+    }
 
   Future<SubscriptionModel?> getSubscription(String id) async {
     try {

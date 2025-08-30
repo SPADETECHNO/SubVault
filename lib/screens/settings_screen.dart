@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:subvault/screens/analytics_screen.dart';
 import '../services/firebase_service.dart';
 import '../services/revenue_cat_service.dart';
 import '../services/notification_service.dart';
@@ -402,8 +403,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               'Analytics',
               'View spending insights',
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Analytics coming soon!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AnalyticsScreen()),
                 );
               },
             ),

@@ -49,7 +49,7 @@ class AppConstants {
   static const List<Map<String, String>> popularServices = [
     {'name': 'Netflix', 'icon': 'netflix.png', 'category': 'Entertainment'},
     {'name': 'Spotify', 'icon': 'spotify.png', 'category': 'Music'},
-    {'name': 'Disney+', 'icon': 'disney.png', 'category': 'Entertainment'},
+    {'name': 'JioHotstar', 'icon': 'jiohotstar.png', 'category': 'Entertainment'},
     {'name': 'YouTube Premium', 'icon': 'youtube.png', 'category': 'Entertainment'},
     {'name': 'Amazon Prime', 'icon': 'amazon.png', 'category': 'Shopping'},
     {'name': 'Adobe Creative', 'icon': 'adobe.png', 'category': 'Productivity'},

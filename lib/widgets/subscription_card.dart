@@ -173,28 +173,45 @@ class SubscriptionCard extends StatelessWidget {
   }
 
   Widget _buildServiceIcon({double size = 50}) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: AppColors.primary.withOpacity(0.1),
-      ),
-      child: subscription.iconUrl.isNotEmpty
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                subscription.iconUrl,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildFallbackIcon(size);
-                },
-              ),
-            )
-          : _buildFallbackIcon(size),
-    );
+    if (subscription.iconUrl.isEmpty) {
+      return _buildFallbackIcon(size);
+    }
+    if (subscription.iconUrl.startsWith('http')) {
+      // Network image
+      return Container(
+        width: size,
+        height: size,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            subscription.iconUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildFallbackIcon(size);
+            },
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        width: size,
+        height: size,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(
+            'assets/icons/${subscription.iconUrl}',
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildFallbackIcon(size);
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildFallbackIcon(double size) {
@@ -336,32 +353,32 @@ class SubscriptionCard extends StatelessWidget {
     return Row(
       children: [
         // Toggle Status
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onToggleStatus,
-            icon: Icon(
-              subscription.isActive ? Icons.pause : Icons.play_arrow,
-              size: 16,
-            ),
-            label: Text(
-              subscription.isActive ? 'Pause' : 'Resume',
-              style: TextStyle(fontSize: 12),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: subscription.isActive 
-                  ? AppColors.secondary 
-                  : AppColors.success,
-              side: BorderSide(
-                color: subscription.isActive 
-                    ? AppColors.secondary 
-                    : AppColors.success,
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          ),
-        ),
+        // Expanded(
+        //   child: OutlinedButton.icon(
+        //     onPressed: onToggleStatus,
+        //     icon: Icon(
+        //       subscription.isActive ? Icons.pause : Icons.play_arrow,
+        //       size: 16,
+        //     ),
+        //     label: Text(
+        //       subscription.isActive ? 'Pause' : 'Resume',
+        //       style: TextStyle(fontSize: 12),
+        //     ),
+        //     style: OutlinedButton.styleFrom(
+        //       foregroundColor: subscription.isActive 
+        //           ? AppColors.secondary 
+        //           : AppColors.success,
+        //       side: BorderSide(
+        //         color: subscription.isActive 
+        //             ? AppColors.secondary 
+        //             : AppColors.success,
+        //       ),
+        //       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        //     ),
+        //   ),
+        // ),
         
-        SizedBox(width: 8),
+        // SizedBox(width: 8),
         
         // Edit
         Expanded(
