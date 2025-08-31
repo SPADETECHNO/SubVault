@@ -110,6 +110,8 @@ class PrimaryButton extends StatelessWidget {
   final IconData? icon;
   final Widget? leading;
   final double? width;
+  final double height;
+  final Color? backgroundColor;
 
   const PrimaryButton({
     Key? key,
@@ -119,7 +121,8 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.leading,
     this.width,
-    height
+    this.backgroundColor, 
+    this.height = 56,
   }) : super(key: key);
 
   @override
@@ -131,7 +134,8 @@ class PrimaryButton extends StatelessWidget {
       icon: icon,
       leading: leading,
       width: width,
-      backgroundColor: AppColors.primary,
+      height: height,
+      backgroundColor: backgroundColor ?? AppColors.primary,
     );
   }
 }

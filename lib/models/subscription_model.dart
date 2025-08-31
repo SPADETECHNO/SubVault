@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/helpers.dart';
 
-enum BillingCycle { monthly, yearly, weekly }
+enum BillingCycle { monthly, yearly, weekly, quarterly }
 
 class SubscriptionModel {
   final String id;
@@ -80,6 +80,22 @@ class SubscriptionModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'lastUpdated': Timestamp.now(),
     };
+  }
+
+  bool get isOverdue {
+    return daysUntilBilling < 0;
+  }
+
+  bool get isDueToday {
+    return daysUntilBilling == 1;
+  }
+
+  String get statusText {
+    return Helpers.getSubscriptionStatus(nextBilling, createdAt: createdAt);
+  }
+
+  bool get needsPayment {
+    return daysUntilBilling < 0;
   }
 
   // Calculate monthly equivalent for analytics

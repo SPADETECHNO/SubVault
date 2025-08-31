@@ -9,6 +9,7 @@ class SubscriptionCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onToggleStatus;
+  final VoidCallback? onMarkPaid;
   final bool showActions;
   final bool isCompact;
 
@@ -19,6 +20,7 @@ class SubscriptionCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onToggleStatus,
+    this.onMarkPaid,
     this.showActions = true,
     this.isCompact = false,
   }) : super(key: key);
@@ -127,45 +129,51 @@ class SubscriptionCard extends StatelessWidget {
       children: [
         // Icon
         _buildServiceIcon(size: 40),
-        SizedBox(width: 12),
+        SizedBox(width: 10),
         
         // Info
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                subscription.name,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+          child: SizedBox(
+            height: 90,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Service name at the top
+                Text(
+                  subscription.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 2),
-              Row(
-                children: [
-                  Text(
-                    subscription.formattedPrice,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                
+                Row(
+                  children: [
+                    Text(
+                      subscription.formattedPrice,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                  Text(
-                    ' • ${subscription.formattedBillingCycle}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                    Flexible(
+                      child: Text(
+                        ' • ${subscription.formattedBillingCycle}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        
         // Days until renewal
         _buildRenewalBadge(),
       ],
@@ -291,6 +299,7 @@ class SubscriptionCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
+                  // 'Last billing: ${Helpers.formatDate(subscription.lastBilling)}', 
                   'Next billing: ${Helpers.formatDate(subscription.nextBilling)}',
                   style: TextStyle(
                     fontSize: 12,
@@ -350,6 +359,8 @@ class SubscriptionCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons() {
+    final isOverdue = subscription.isOverdue;
+
     return Row(
       children: [
         // Toggle Status
@@ -377,8 +388,22 @@ class SubscriptionCard extends StatelessWidget {
         //     ),
         //   ),
         // ),
-        
-        // SizedBox(width: 8),
+
+        if (subscription.isOverdue && onMarkPaid != null) ...[
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: onMarkPaid,
+              icon: Icon(Icons.payment, size: 16),
+              label: Text('Paid', style: TextStyle(fontSize: 12)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.success,
+                side: BorderSide(color: AppColors.success),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+          ),
+        SizedBox(width: 8),
+        ],
         
         // Edit
         Expanded(
@@ -414,17 +439,18 @@ class SubscriptionCard extends StatelessWidget {
   }
 
   String _getRenewalText(int daysLeft) {
-    if (daysLeft < 0) {
-      return 'Overdue by ${daysLeft.abs()} days';
-    } else if (daysLeft == 0) {
-      return 'Renews today';
-    } else if (daysLeft == 1) {
-      return 'Renews tomorrow';
-    } else if (daysLeft <= 7) {
-      return 'Renews in $daysLeft days';
-    } else {
-      return 'Renews in $daysLeft days';
-    }
+    // if (daysLeft < 0) {
+    //   return 'Overdue by ${daysLeft.abs()} days';
+    // } else if (daysLeft == 0) {
+    //   return 'Renews today';
+    // } else if (daysLeft == 1) {
+    //   return 'Renews tomorrow';
+    // } else if (daysLeft <= 7) {
+    //   return 'Renews in $daysLeft days';
+    // } else {
+    //   return 'Renews in $daysLeft days';
+    // }
+    return subscription.statusText;
   }
 }
 

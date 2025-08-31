@@ -23,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isPremium = false;
   Map<String, double> _spendingData = {'monthly': 0.0, 'yearly': 0.0};
   List<SubscriptionModel> _upcomingRenewals = [];
+  int _activeSubscriptionCount = 0;
   
   String _selectedCurrency = 'USD';
   Map<String, double> _exchangeRates = {'USD': 1.0};
@@ -50,6 +51,33 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadExchangeRates();
     await _loadSpendingData();
     await _loadUpcomingRenewals();
+    await _loadActiveSubscriptionCount();
+  }
+
+  Future<void> _loadActiveSubscriptionCount() async {
+    try {
+      final firebaseService = Provider.of<FirebaseService>(
+        context,
+        listen: false,
+      );
+      
+      // Get all active subscriptions
+      final subscriptions = await firebaseService.getSubscriptions().first;
+      final activeCount = subscriptions.where((sub) => sub.isActive).length;
+      
+      if (mounted) {
+        setState(() {
+          _activeSubscriptionCount = activeCount;
+        });
+      }
+    } catch (e) {
+      print('Error loading active subscription count: $e');
+      if (mounted) {
+        setState(() {
+          _activeSubscriptionCount = 0;
+        });
+      }
+    }
   }
 
   Future<void> _loadExchangeRates() async {
@@ -183,6 +211,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _markSubscriptionAsPaid(SubscriptionModel subscription) async {
+    try {
+      final firebaseService = Provider.of<FirebaseService>(context, listen: false);
+      await firebaseService.markSubscriptionAsPaid(subscription.id);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${subscription.name} marked as paid!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      
+      _loadInitialData(); // Refresh the list
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to mark as paid'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   Widget _buildCurrencyDropdown() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -301,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (!_isPremium)
             Text(
-              'Free Plan • ${AppConstants.freeSubscriptionLimit - (_upcomingRenewals.length)} slots left',
+              'Free Plan • ${AppConstants.freeSubscriptionLimit - _activeSubscriptionCount} slots left',
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
         ],
@@ -400,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: _buildSpendingStat(
                   'Active Subs',
-                  '${_upcomingRenewals.length}',
+                  '$_activeSubscriptionCount',
                   Icons.subscriptions,
                 ),
               ),
@@ -633,11 +684,13 @@ class _HomeScreenState extends State<HomeScreen> {
               delegate: SliverChildBuilderDelegate((context, index) {
                 final subscription = snapshot.data![index];
                 return SubscriptionCard(
+                  key: ValueKey(subscription.id),
                   subscription: subscription,
                   onTap: () => _viewSubscriptionDetails(subscription),
                   onEdit: () => _editSubscription(subscription),
                   onDelete: () => _deleteSubscription(subscription),
                   onToggleStatus: () => _toggleSubscriptionStatus(subscription),
+                  onMarkPaid: () => _markSubscriptionAsPaid(subscription),
                 );
               }, childCount: snapshot.data!.length),
             );

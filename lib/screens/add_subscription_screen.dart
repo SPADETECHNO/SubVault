@@ -883,10 +883,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
       final firebaseService = Provider.of<FirebaseService>(context, listen: false);
       final price = double.parse(_priceController.text);
       
-      final nextBilling = Helpers.calculateNextBilling(
-        _selectedStartDate,
-        _selectedBillingCycle.name,
-      );
+      final nextBilling = _selectedStartDate;
 
       final subscription = SubscriptionModel(
         id: widget.editingSubscription?.id ?? '',

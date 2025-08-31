@@ -255,7 +255,7 @@ class FirebaseService extends ChangeNotifier {
     }
   }
 
-  Future<String?> addSubscription(SubscriptionModel subscription) async {
+  Future<String> addSubscription(SubscriptionModel subscription) async {
     if (currentUser == null) throw 'User not authenticated';
     
     try {
@@ -265,17 +265,31 @@ class FirebaseService extends ChangeNotifier {
         throw 'Subscription limit reached. Upgrade to Premium for unlimited subscriptions.';
       }
 
-      // Add subscription to Firestore
+      final correctedNextBilling = Helpers.calculateInitialNextBilling(
+        subscription.startDate ?? DateTime.now(), 
+        subscription.billingCycle.name
+      );
+      
+      print('🔍 Setting nextBilling to: $correctedNextBilling for ${subscription.name}');
+      
+      // Add subscription to Firestore with corrected nextBilling
       await _validateUniqueSubscriptionName(subscription.name, subscription.id);
       DocumentReference doc = await _firestore.collection('subscriptions').add(
-        subscription.copyWith(userId: currentUser!.uid).toFirestore()
+        subscription.copyWith(
+          userId: currentUser!.uid,
+          nextBilling: correctedNextBilling, 
+        ).toFirestore()
       );
 
       // Schedule notifications for the new subscription
       await NotificationService.scheduleRenewalReminder(
-        subscription.copyWith(id: doc.id, userId: currentUser!.uid)
+        subscription.copyWith(
+          id: doc.id, 
+          userId: currentUser!.uid,
+          nextBilling: correctedNextBilling,
+        )
       );
-      
+
       notifyListeners();
       return doc.id;
     } catch (e) {
@@ -514,6 +528,204 @@ class FirebaseService extends ChangeNotifier {
       return {};
     }
   }
+
+  Future<void> markSubscriptionAsPaid(String subscriptionId) async {
+    if (currentUser == null) throw 'User not authenticated';
+    
+    try {
+      // Get current subscription
+      final subscription = await getSubscription(subscriptionId);
+      if (subscription == null) throw 'Subscription not found';
+      
+      // Calculate new billing date
+      final newNextBilling = Helpers.renewSubscription(
+        subscription.nextBilling,
+        subscription.billingCycle.name,
+      );
+      
+      // Update subscription document
+      await _firestore.collection('subscriptions').doc(subscriptionId).update({
+        'nextBilling': Timestamp.fromDate(newNextBilling),
+        'isActive': true,
+        'lastPaidDate': FieldValue.serverTimestamp(),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+      
+      await _firestore.collection('subscription_history').add({
+        'userId': currentUser!.uid,
+        'subscriptionId': subscription.id,
+        'subscriptionName': subscription.name,
+        'amount': subscription.price,
+        'currency': subscription.currency,
+        'paidDate': FieldValue.serverTimestamp(),
+        'previousBilling': Timestamp.fromDate(subscription.nextBilling),
+        'newNextBilling': Timestamp.fromDate(newNextBilling),
+        'billingCycle': subscription.billingCycle.name,
+        'status': subscription.daysUntilBilling < 0 ? 'overdue_paid' : 'renewed',
+        'paymentMethod': 'manual',
+        'daysOverdue': subscription.daysUntilBilling < 0 ? subscription.daysUntilBilling.abs() : 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      
+      // Cancel old notifications and schedule new ones
+      await NotificationService.cancelSubscriptionNotifications(subscriptionId);
+      final updatedSubscription = subscription.copyWith(
+        nextBilling: newNextBilling,
+        isActive: true,
+      );
+      await NotificationService.scheduleRenewalReminder(updatedSubscription);
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Mark subscription as paid error: $e');
+      throw 'Failed to mark subscription as paid: $e';
+    }
+  }
+
+  // Get payment history for a specific subscription with premium limits
+  Future<List<Map<String, dynamic>>> getPaymentHistory(
+    String subscriptionId, {
+    bool? isPremium,
+  }) async {
+    if (currentUser == null) return [];
+
+    try {
+      // Get user's premium status if not provided
+      isPremium ??= await _getUserPremiumStatus();
+      
+      // Calculate cutoff date based on premium status
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final cutoffDate = isPremium
+        ? todayStart.subtract(Duration(days: 365 * 2)) // 2 years for premium
+        : todayStart.subtract(Duration(days: 60));     // 2 months (60 days) 
+
+      QuerySnapshot snapshot = await _firestore
+          .collection('subscription_history')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .where('subscriptionId', isEqualTo: subscriptionId)
+          .where('paidDate', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoffDate))
+          .orderBy('paidDate', descending: true)
+          .limit(isPremium ? 1000 : 100) // More records for premium
+          .get();
+
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      debugPrint('Get payment history error: $e');
+      return [];
+    }
+  }
+
+  // Get all payment history for current user with premium limits
+  Future<List<Map<String, dynamic>>> getAllPaymentHistory({
+    bool? isPremium,
+    int? customLimit,
+  }) async {
+    if (currentUser == null) return [];
+    
+    try {
+      // Get user's premium status if not provided
+      isPremium ??= await _getUserPremiumStatus();
+      
+      // Calculate cutoff date based on premium status
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final cutoffDate = isPremium
+        ? todayStart.subtract(Duration(days: 365 * 2)) // 2 years for premium
+        : todayStart.subtract(Duration(days: 60));     // 2 months (60 days) 
+
+      // Determine result limit
+      final resultLimit = customLimit ?? (isPremium ? 1000 : 100);
+
+      QuerySnapshot snapshot = await _firestore
+          .collection('subscription_history')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .where('paidDate', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoffDate))
+          .orderBy('paidDate', descending: true)
+          .limit(resultLimit)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      debugPrint('Get all payment history error: $e');
+      return [];
+    }
+  }
+
+  // Helper method to get user's premium status
+  Future<bool> _getUserPremiumStatus() async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUser!.uid).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final isPremium = userData['isPremium'] ?? false;
+        final premiumExpiresAt = userData['premiumExpiresAt'] as Timestamp?;
+        
+        if (!isPremium) return false;
+        
+        // Check if premium is still active
+        if (premiumExpiresAt != null) {
+          return premiumExpiresAt.toDate().isAfter(DateTime.now());
+        }
+        
+        return isPremium;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error getting user premium status: $e');
+      return false;
+    }
+  }
+
+  // Get history stats for premium vs free comparison
+  Future<Map<String, dynamic>> getHistoryStats() async {
+    if (currentUser == null) return {};
+    
+    try {
+      final isPremium = await _getUserPremiumStatus();
+      
+      // Get total history count (all time)
+      final allHistorySnapshot = await _firestore
+          .collection('subscription_history')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .count()
+          .get();
+      
+      // Get available history count (within limits)
+       final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final cutoffDate = isPremium
+        ? todayStart.subtract(Duration(days: 365 * 2)) // 2 years for premium
+        : todayStart.subtract(Duration(days: 60));     // 2 months (60 days)
+          
+      final availableHistorySnapshot = await _firestore
+          .collection('subscription_history')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .where('paidDate', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoffDate))
+          .count()
+          .get();
+      
+      return {
+        'isPremium': isPremium,
+        'totalHistoryCount': allHistorySnapshot.count ?? 0,
+        'availableHistoryCount': availableHistorySnapshot.count ?? 0,
+        'historyLimit': isPremium ? '2 years' : '6 months',
+        'cutoffDate': cutoffDate,
+      };
+    } catch (e) {
+      debugPrint('Error getting history stats: $e');
+      return {};
+    }
+  }
+
 
   // Enhanced history management
   Future<void> addSubscriptionHistory(SubscriptionModel subscription) async {

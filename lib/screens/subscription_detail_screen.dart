@@ -477,8 +477,19 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen>
   }
 
   Widget _buildActionButtons() {
+    final isOverdue = widget.subscription.isOverdue;
+
     return Column(
       children: [
+        if (isOverdue) ...[
+          PrimaryButton(
+            text: 'Mark as Paid',
+            onPressed: _markAsPaid,
+            icon: Icons.payment,
+            backgroundColor: AppColors.success,
+          ),
+          SizedBox(height: 16),
+        ],
         PrimaryButton(
           text: 'Edit Subscription',
           onPressed: _editSubscription,
@@ -495,17 +506,18 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen>
   }
 
   String _getRenewalText(int daysLeft) {
-    if (daysLeft < 0) {
-      return 'Overdue by ${daysLeft.abs()} days';
-    } else if (daysLeft == 0) {
-      return 'Renews today';
-    } else if (daysLeft == 1) {
-      return 'Renews tomorrow';
-    } else if (daysLeft <= 7) {
-      return 'Renews in $daysLeft days';
-    } else {
-      return 'Renews in $daysLeft days';
-    }
+    // if (daysLeft < 0) {
+    //   return 'Overdue by ${daysLeft.abs()} days';
+    // } else if (daysLeft == 0) {
+    //   return 'Renews today';
+    // } else if (daysLeft == 1) {
+    //   return 'Renews tomorrow';
+    // } else if (daysLeft <= 7) {
+    //   return 'Renews in $daysLeft days';
+    // } else {
+    //   return 'Renews in $daysLeft days';
+    // }
+    return widget.subscription.statusText;
   }
 
   void _editSubscription() {
@@ -522,6 +534,52 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen>
         Navigator.pop(context, true);
       }
     });
+  }
+
+  Future<void> _markAsPaid() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Mark as Paid'),
+        content: Text('Mark ${widget.subscription.name} as paid and renew for the next billing cycle?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          PrimaryButton(
+            text: 'Mark Paid',
+            width: 120,
+            height: 40,
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final firebaseService = Provider.of<FirebaseService>(context, listen: false);
+        await firebaseService.markSubscriptionAsPaid(widget.subscription.id);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${widget.subscription.name} marked as paid successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        
+        // Return to home screen with refresh signal
+        Navigator.pop(context, true);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to mark as paid: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _deleteSubscription() async {
