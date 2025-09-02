@@ -29,8 +29,8 @@ class UserModel {
       name: data['name'] ?? '',
       isPremium: data['isPremium'] ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      premiumExpiresAt: data['premiumExpiresAt'] != null 
-          ? (data['premiumExpiresAt'] as Timestamp).toDate() 
+      premiumExpiresAt: data['premiumExpiresAt'] != null
+          ? (data['premiumExpiresAt'] as Timestamp).toDate()
           : null,
       profileImageUrl: data['profileImageUrl'],
       preferences: data['preferences'] as Map<String, dynamic>?,
@@ -43,8 +43,8 @@ class UserModel {
       'name': name,
       'isPremium': isPremium,
       'createdAt': Timestamp.fromDate(createdAt),
-      'premiumExpiresAt': premiumExpiresAt != null 
-          ? Timestamp.fromDate(premiumExpiresAt!) 
+      'premiumExpiresAt': premiumExpiresAt != null
+          ? Timestamp.fromDate(premiumExpiresAt!)
           : null,
       'profileImageUrl': profileImageUrl,
       'preferences': preferences,
@@ -76,6 +76,7 @@ class UserModel {
 
   // Helper getters
   String get firstName => name.split(' ').first;
-  bool get isPremiumActive => isPremium && 
+  bool get isPremiumActive =>
+      isPremium &&
       (premiumExpiresAt == null || premiumExpiresAt!.isAfter(DateTime.now()));
 }

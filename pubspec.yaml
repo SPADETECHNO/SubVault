@@ -38,6 +38,11 @@ dependencies:
   firebase_messaging: ^16.0.0
   firebase_analytics: ^12.0.0
 
+  # Sign-In Methods
+  google_sign_in: ^6.1.5  # Add this line
+  sign_in_with_apple: ^6.1.2  # Add this line
+  crypto: ^3.0.3               # Add this for nonce generation
+  
   # RevenueCat for subscriptions
   purchases_flutter: ^9.2.1
 
@@ -67,6 +72,8 @@ dependencies:
   uuid: ^4.2.1
   cupertino_icons: ^1.0.8
   timezone: ^0.10.1
+
+
 
 dev_dependencies:
   flutter_test:
