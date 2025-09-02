@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/firebase_service.dart';
@@ -25,6 +26,9 @@ class _LoginScreenState extends State<LoginScreen>
   
   bool _isLogin = true;
   bool _isLoading = false;
+
+  // Set this to true when you have an Apple Developer account and Apple Sign-In is configured
+  final bool _hasAppleDeveloperAccount = false;
 
   @override
   void initState() {
@@ -231,10 +235,51 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  // Widget _buildSocialLogin() {
+  //   return Column(
+  //     children: [
+  //       // Divider
+  //       Row(
+  //         children: [
+  //           Expanded(child: Divider(color: AppColors.divider)),
+  //           Padding(
+  //             padding: EdgeInsets.symmetric(horizontal: 16),
+  //             child: Text(
+  //               'Or continue with',
+  //               style: TextStyle(
+  //                 color: AppColors.textSecondary,
+  //                 fontSize: 14,
+  //               ),
+  //             ),
+  //           ),
+  //           Expanded(child: Divider(color: AppColors.divider)),
+  //         ],
+  //       ),
+        
+  //       SizedBox(height: 24),
+        
+  //       // Google Sign In Button
+  //       SecondaryButton(
+  //         text: 'Continue with Google',
+  //         onPressed: _handleGoogleSignIn,
+  //         icon: Icons.g_mobiledata,
+  //       ),
+  //       if (Platform.isIOS && _hasAppleDeveloperAccount) ...[
+  //         SizedBox(height: 16),
+  //         SecondaryButton(
+  //           text: 'Continue with Apple',
+  //           onPressed: _handleAppleSignIn,
+  //           icon: Icons.apple,
+  //         ),
+  //       ],
+  //     ],
+  //   );
+  // }
   Widget _buildSocialLogin() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Divider
+        // Divider with text
         Row(
           children: [
             Expanded(child: Divider(color: AppColors.divider)),
@@ -251,19 +296,28 @@ class _LoginScreenState extends State<LoginScreen>
             Expanded(child: Divider(color: AppColors.divider)),
           ],
         ),
-        
+
         SizedBox(height: 24),
-        
-        // Google Sign In Button
-        SecondaryButton(
-          text: 'Continue with Google',
-          onPressed: _handleGoogleSignIn,
-          icon: Icons.g_mobiledata,
-          // leading: Image.asset(
-          //   'assets/icons/google.png',
-          //   height: 20,
-          //   width: 20,
-          // ),
+
+        // Side-by-side Google and Apple Sign-In Buttons
+        Row(
+          children: [
+            Expanded(
+              child: SecondaryButton(
+                text: 'Google',
+                onPressed: _handleGoogleSignIn,
+                icon: Icons.g_mobiledata, // Replace with Google logo if desired
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: SecondaryButton(
+                text: 'Apple',
+                onPressed: _handleAppleSignIn,
+                icon: Icons.apple,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -348,8 +402,31 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleGoogleSignIn() async {
-    // TODO: Implement Google Sign In
-    _showInfoSnackBar('Google Sign In coming soon!');
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final firebaseService = Provider.of<FirebaseService>(context, listen: false);
+      final result = await firebaseService.signInWithGoogle();
+      
+      if (result != null) {
+        _navigateToHome();
+      }
+    } catch (e) {
+      _showErrorSnackBar(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    // TODO: Implement Apple Sign In
+    _showInfoSnackBar('Apple Sign In coming soon!');
   }
 
   void _navigateToHome() {

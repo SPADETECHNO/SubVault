@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../models/subscription_model.dart';
 import '../utils/constants.dart';
@@ -20,6 +21,10 @@ class FirebaseService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
+
   User? get currentUser => _auth.currentUser;
   bool get isAuthenticated => currentUser != null;
   String? get currentUserId => currentUser?.uid;
@@ -128,9 +133,38 @@ class FirebaseService extends ChangeNotifier {
     }
   }
 
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential result = await _auth.signInWithCredential(credential);
+      
+      if (result.user != null) {
+        await _createUserDocumentFromGoogle(result.user!, googleUser);
+      }
+      
+      notifyListeners();
+      return result;
+    } catch (e) {
+      debugPrint('Google sign-in error: $e');
+      throw 'Failed to sign in with Google';
+    }
+  }
+
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
+      await Future.wait([
+        _auth.signOut(),
+        _googleSignIn.signOut(),
+      ]);
       notifyListeners();
     } catch (e) {
       debugPrint('Sign out error: $e');
@@ -195,6 +229,38 @@ class FirebaseService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Create user document error: $e');
       throw 'Failed to create user profile';
+    }
+  }
+
+  Future<void> _createUserDocumentFromGoogle(User user, GoogleSignInAccount googleUser) async {
+    try {
+      DocumentSnapshot doc = await _firestore.collection('users').doc(user.uid).get();
+      
+      if (!doc.exists) {
+        final userModel = UserModel(
+          id: user.uid,
+          email: user.email!,
+          name: googleUser.displayName ?? 'User',
+          createdAt: DateTime.now(),
+          isPremium: false,
+          profileImageUrl: googleUser.photoUrl,
+        );
+
+        await _firestore.collection('users').doc(user.uid).set(
+          userModel.toFirestore(),
+          SetOptions(merge: true),
+        );
+      }
+
+      String? fcmToken = await _firebaseMessaging.getToken();
+      if (fcmToken != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': fcmToken,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      debugPrint('Create user document error: $e');
     }
   }
 
