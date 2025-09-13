@@ -306,7 +306,20 @@ class _LoginScreenState extends State<LoginScreen>
               child: SecondaryButton(
                 text: 'Google',
                 onPressed: _handleGoogleSignIn,
-                icon: Icons.g_mobiledata, // Replace with Google logo if desired
+                leading: Image.asset(
+                  'assets/icons/google.png',
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to icon if image fails to load
+                    return Icon(
+                      Icons.g_mobiledata,
+                      size: 20,
+                      color: AppColors.primary,
+                    );
+                  },
+                ),
               ),
             ),
             SizedBox(width: 16),
@@ -314,7 +327,21 @@ class _LoginScreenState extends State<LoginScreen>
               child: SecondaryButton(
                 text: 'Apple',
                 onPressed: _handleAppleSignIn,
-                icon: Icons.apple,
+                leading: Image.asset(
+                  'assets/icons/apple.png',
+                  width: 20,
+                  height: 20,
+                  color: AppColors.primary,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to icon if image fails to load
+                    return Icon(
+                      Icons.apple,
+                      size: 20,
+                      color: AppColors.primary,
+                    );
+                  },
+                ),
               ),
             ),
           ],

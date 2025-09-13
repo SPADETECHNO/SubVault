@@ -76,24 +76,37 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final textScaler = mediaQuery.textScaler;
+    
+    final responsiveLabelFontSize = _getResponsiveLabelFontSize(screenWidth, textScaler);
+    final responsiveTextFontSize = _getResponsiveTextFontSize(screenWidth, textScaler);
+    final responsiveBorderRadius = _getResponsiveBorderRadius(screenWidth);
+    final responsiveIconSize = _getResponsiveIconSize(screenWidth, textScaler);
+    final responsivePadding = _getResponsivePadding(screenWidth, screenHeight, widget.maxLines);
+    final responsiveSpacing = _getResponsiveSpacing(screenHeight);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label
-        Text(
-          widget.label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+        // Label with responsive font size
+        if (widget.label.isNotEmpty)
+          Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: responsiveLabelFontSize,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
-        SizedBox(height: 8),
+        if (widget.label.isNotEmpty) SizedBox(height: responsiveSpacing),
         
-        // Text Field
+        // Text Field Container
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(responsiveBorderRadius),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -116,89 +129,63 @@ class _CustomTextFieldState extends State<CustomTextField> {
             maxLines: widget.maxLines,
             textCapitalization: widget.textCapitalization,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: responsiveTextFontSize,
               color: AppColors.textPrimary,
             ),
             decoration: InputDecoration(
               hintText: widget.hintText,
               hintStyle: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 16,
+                fontSize: responsiveTextFontSize,
               ),
-              
-              // Prefix Icon
+              // Responsive prefix icon
               prefixIcon: widget.prefixIcon != null
                   ? Icon(
                       widget.prefixIcon,
                       color: _isFocused ? AppColors.primary : AppColors.textSecondary,
-                      size: 20,
+                      size: responsiveIconSize,
                     )
                   : null,
-              
-              // Suffix Icon
-              suffixIcon: _buildSuffixIcon(),
-              
-              // Border styling
+              // Responsive suffix icon
+              suffixIcon: _buildResponsiveSuffixIcon(responsiveIconSize),
+              // Responsive border styling
               filled: true,
               fillColor: widget.enabled ? AppColors.surface : Colors.grey[100],
-              
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.divider,
-                  width: 1,
-                ),
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: AppColors.divider, width: 1),
               ),
-              
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
                 borderSide: BorderSide(
                   color: widget.errorText != null ? AppColors.error : AppColors.divider,
                   width: 1,
                 ),
               ),
-              
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
                 borderSide: BorderSide(
                   color: widget.errorText != null ? AppColors.error : AppColors.primary,
                   width: 2,
                 ),
               ),
-              
               errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.error,
-                  width: 1,
-                ),
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: AppColors.error, width: 1),
               ),
-              
               focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.error,
-                  width: 2,
-                ),
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: AppColors.error, width: 2),
               ),
-              
               disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
               ),
-              
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: widget.maxLines > 1 ? 16 : 18,
-              ),
-              
+              contentPadding: responsivePadding,
               errorText: widget.errorText,
               errorStyle: TextStyle(
                 color: AppColors.error,
-                fontSize: 12,
+                fontSize: responsiveTextFontSize * 0.85,
               ),
             ),
           ),
@@ -207,13 +194,52 @@ class _CustomTextFieldState extends State<CustomTextField> {
     );
   }
 
-  Widget? _buildSuffixIcon() {
+  double _getResponsiveLabelFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize = screenWidth < 400 ? 12.0 : 14.0;
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.2);
+  }
+
+  double _getResponsiveTextFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize = screenWidth < 400 ? 14.0 : 16.0;
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.3);
+  }
+
+  double _getResponsiveBorderRadius(double screenWidth) {
+    return screenWidth < 400 ? 8.0 : 12.0;
+  }
+
+  double _getResponsiveIconSize(double screenWidth, TextScaler textScaler) {
+    double baseIconSize = screenWidth < 400 ? 18.0 : 20.0;
+    return baseIconSize * textScaler.scale(1.0).clamp(0.8, 1.2);
+  }
+
+  EdgeInsetsGeometry _getResponsivePadding(double screenWidth, double screenHeight, int maxLines) {
+    double horizontalPadding = screenWidth < 400 ? 12.0 : 16.0;
+    double verticalPadding;
+    
+    if (maxLines > 1) {
+      verticalPadding = screenHeight < 600 ? 12.0 : 16.0;
+    } else {
+      verticalPadding = screenHeight < 600 ? 14.0 : 18.0;
+    }
+    
+    return EdgeInsets.symmetric(
+      horizontal: horizontalPadding,
+      vertical: verticalPadding,
+    );
+  }
+
+  double _getResponsiveSpacing(double screenHeight) {
+    return screenHeight < 600 ? 6.0 : 8.0;
+  }
+
+  Widget? _buildResponsiveSuffixIcon(double iconSize) {
     if (widget.isPassword) {
       return IconButton(
         icon: Icon(
           _obscureText ? Icons.visibility_off : Icons.visibility,
           color: AppColors.textSecondary,
-          size: 20,
+          size: iconSize,
         ),
         onPressed: () {
           setState(() {
@@ -226,7 +252,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         icon: Icon(
           widget.suffixIcon,
           color: AppColors.textSecondary,
-          size: 20,
+          size: iconSize,
         ),
         onPressed: widget.onSuffixIconPressed,
       );
@@ -235,7 +261,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   }
 }
 
-// Specialized TextField variants
+
 class EmailTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String? Function(String?)? validator;
@@ -301,7 +327,7 @@ class PriceTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
   final String? errorText;
-  final String prefixText; // ✅ NEW: Add this parameter
+  final String prefixText;
 
   const PriceTextField({
     Key? key,
@@ -309,80 +335,120 @@ class PriceTextField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.errorText,
-    this.prefixText = '\$', // ✅ Default to $ symbol
+    this.prefixText = '\$',
   }) : super(key: key);
 
   @override
-    Widget build(BuildContext context) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Price',
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final textScaler = mediaQuery.textScaler;
+    
+    final responsiveLabelFontSize = _getResponsiveLabelFontSize(screenWidth, textScaler);
+    final responsiveTextFontSize = _getResponsiveTextFontSize(screenWidth, textScaler);
+    final responsiveBorderRadius = _getResponsiveBorderRadius(screenWidth);
+    final responsivePadding = _getResponsivePadding(screenWidth, screenHeight);
+    final responsiveSpacing = _getResponsiveSpacing(screenHeight);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Price',
+          style: TextStyle(
+            fontSize: responsiveLabelFontSize,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: responsiveSpacing),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(responsiveBorderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+            ],
+            validator: validator,
+            onChanged: onChanged,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontSize: responsiveTextFontSize,
               color: AppColors.textPrimary,
             ),
-          ),
-          SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextFormField(
-              controller: controller,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              validator: validator,
-              onChanged: onChanged,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
+            decoration: InputDecoration(
+              hintText: '0.00',
+              hintStyle: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: responsiveTextFontSize,
               ),
-              decoration: InputDecoration(
-                hintText: '0.00',
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                ),
-                prefixText: '$prefixText ',
-                prefixStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.divider, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.divider, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              prefixText: '$prefixText ',
+              prefixStyle: TextStyle(
+                fontSize: responsiveTextFontSize,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: AppColors.divider, width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: AppColors.divider, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(responsiveBorderRadius),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: responsivePadding,
+              errorText: errorText,
+              errorStyle: TextStyle(
+                color: AppColors.error,
+                fontSize: responsiveTextFontSize * 0.85,
               ),
             ),
           ),
-        ],
-      );
-    }
+        ),
+      ],
+    );
   }
+
+  double _getResponsiveLabelFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize = screenWidth < 400 ? 12.0 : 14.0;
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.2);
+  }
+
+  double _getResponsiveTextFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize = screenWidth < 400 ? 14.0 : 16.0;
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.3);
+  }
+
+  double _getResponsiveBorderRadius(double screenWidth) {
+    return screenWidth < 400 ? 8.0 : 12.0;
+  }
+
+  EdgeInsetsGeometry _getResponsivePadding(double screenWidth, double screenHeight) {
+    double horizontalPadding = screenWidth < 400 ? 12.0 : 16.0;
+    double verticalPadding = screenHeight < 600 ? 14.0 : 18.0;
+    return EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding);
+  }
+
+  double _getResponsiveSpacing(double screenHeight) {
+    return screenHeight < 600 ? 6.0 : 8.0;
+  }
+}
 
 class SearchTextField extends StatelessWidget {
   final TextEditingController? controller;

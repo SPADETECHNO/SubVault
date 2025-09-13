@@ -101,6 +101,17 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final textScaler = mediaQuery.textScaler;
+    
+    final responsiveHorizontalPadding = _getResponsiveHorizontalPadding(screenWidth);
+    final responsiveVerticalPadding = _getResponsiveVerticalPadding(screenHeight);
+    final responsiveNavigationFontSize = _getResponsiveNavigationFontSize(screenWidth, textScaler);
+    final responsiveIndicatorSpacing = _getResponsiveIndicatorSpacing(screenHeight);
+    final responsiveBottomPadding = _getResponsiveBottomPadding(screenHeight);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -108,9 +119,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           opacity: _fadeAnimation,
           child: Column(
             children: [
-              // Top Navigation
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: EdgeInsets.symmetric(
+                  horizontal: responsiveHorizontalPadding,
+                  vertical: responsiveVerticalPadding,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -127,12 +140,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               'Back',
                               style: TextStyle(
                                 color: AppColors.primary,
-                                fontSize: 16,
+                                fontSize: responsiveNavigationFontSize,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           )
-                        : SizedBox(width: 60),
+                        : SizedBox(width: screenWidth * 0.15),
 
                     // Skip Button
                     TextButton(
@@ -141,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         'Skip',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 16,
+                          fontSize: responsiveNavigationFontSize,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -150,24 +163,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
 
-              // Page Content
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
                   onPageChanged: _onPageChanged,
                   itemCount: _pages.length,
                   itemBuilder: (context, index) {
-                    return OnboardingPage(data: _pages[index]);
+                    return OnboardingPage(
+                      data: _pages[index],
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                      textScaler: textScaler,
+                    );
                   },
                 ),
               ),
 
-              // Bottom Section
               Padding(
-                padding: EdgeInsets.all(24),
+                padding: EdgeInsets.all(responsiveBottomPadding),
                 child: Column(
                   children: [
-                    // Page Indicators
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
@@ -175,8 +190,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         (index) => AnimatedContainer(
                           duration: Duration(milliseconds: 300),
                           margin: EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentIndex == index ? 24 : 8,
-                          height: 8,
+                          width: _currentIndex == index 
+                              ? _getResponsiveIndicatorWidth(screenWidth, true)
+                              : _getResponsiveIndicatorWidth(screenWidth, false),
+                          height: _getResponsiveIndicatorHeight(screenHeight),
                           decoration: BoxDecoration(
                             color: _currentIndex == index
                                 ? AppColors.primary
@@ -187,9 +204,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
 
-                    SizedBox(height: 32),
+                    SizedBox(height: responsiveIndicatorSpacing),
 
-                    // Action Button
                     PrimaryButton(
                       text: _currentIndex == _pages.length - 1
                           ? 'Get Started'
@@ -207,6 +223,44 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ),
       ),
     );
+  }
+
+  double _getResponsiveHorizontalPadding(double screenWidth) {
+    if (screenWidth < 400) return 16.0;
+    if (screenWidth < 600) return 20.0;
+    return 24.0;
+  }
+
+  double _getResponsiveVerticalPadding(double screenHeight) {
+    if (screenHeight < 600) return 12.0;
+    if (screenHeight < 800) return 16.0;
+    return 20.0;
+  }
+
+  double _getResponsiveNavigationFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize = screenWidth < 400 ? 14.0 : 16.0;
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.2);
+  }
+
+  double _getResponsiveIndicatorWidth(double screenWidth, bool isActive) {
+    double baseWidth = screenWidth < 400 ? (isActive ? 20.0 : 6.0) : (isActive ? 24.0 : 8.0);
+    return baseWidth;
+  }
+
+  double _getResponsiveIndicatorHeight(double screenHeight) {
+    return screenHeight < 600 ? 6.0 : 8.0;
+  }
+
+  double _getResponsiveIndicatorSpacing(double screenHeight) {
+    if (screenHeight < 600) return 24.0;
+    if (screenHeight < 800) return 32.0;
+    return 40.0;
+  }
+
+  double _getResponsiveBottomPadding(double screenHeight) {
+    if (screenHeight < 600) return 16.0;
+    if (screenHeight < 800) return 24.0;
+    return 32.0;
   }
 }
 
@@ -226,31 +280,51 @@ class OnboardingData {
 
 class OnboardingPage extends StatelessWidget {
   final OnboardingData data;
+  final double screenWidth;
+  final double screenHeight;
+  final TextScaler textScaler;
 
-  const OnboardingPage({Key? key, required this.data}) : super(key: key);
+  const OnboardingPage({
+    Key? key,
+    required this.data,
+    required this.screenWidth,
+    required this.screenHeight,
+    required this.textScaler,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final responsivePhoneImageHeight = _getResponsivePhoneImageHeight(screenHeight);
+    final responsivePersonImageHeight = _getResponsivePersonImageHeight(screenHeight);
+    final responsiveTitleFontSize = _getResponsiveTitleFontSize(screenWidth, textScaler);
+    final responsiveSubtitleFontSize = _getResponsiveSubtitleFontSize(screenWidth, textScaler);
+    final responsiveIconSize = _getResponsiveIconSize(screenWidth);
+    
+    final phoneAlignment = _getPhoneAlignment(screenWidth, screenHeight);
+    final personAlignment = _getPersonAlignment(screenWidth, screenHeight);
+    final titleAlignment = _getTitleAlignment(screenWidth, screenHeight);
+    final subtitleAlignment = _getSubtitleAlignment(screenWidth, screenHeight);
+
     return SafeArea(
       child: Stack(
         children: [
-          // First Image (Phone)
           Align(
-            alignment: Alignment(-0.7, -0.8),
+            alignment: phoneAlignment,
             child: Image.asset(
               data.phoneImage,
-              height: 380,
+              height: responsivePhoneImageHeight,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  height: 300,
+                  height: responsivePhoneImageHeight * 0.8,
+                  width: responsivePhoneImageHeight * 0.5,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
                     Icons.phone_android,
-                    size: 80,
+                    size: responsiveIconSize,
                     color: AppColors.primary,
                   ),
                 );
@@ -258,24 +332,23 @@ class OnboardingPage extends StatelessWidget {
             ),
           ),
 
-          // Second Image (Person)
           Align(
-            alignment: Alignment(-0.9, 0.25),
+            alignment: personAlignment,
             child: Image.asset(
               data.manImage,
-              height: 405,
+              height: responsivePersonImageHeight,
               fit: BoxFit.contain,
-              alignment: Alignment(-2.0, 0.9),
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  height: 300,
+                  height: responsivePersonImageHeight * 0.8,
+                  width: responsivePersonImageHeight * 0.5,
                   decoration: BoxDecoration(
                     color: AppColors.secondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
                     Icons.person,
-                    size: 80,
+                    size: responsiveIconSize,
                     color: AppColors.secondary,
                   ),
                 );
@@ -283,34 +356,132 @@ class OnboardingPage extends StatelessWidget {
             ),
           ),
 
-          // Title Text
           Align(
-            alignment: Alignment(-0.7, 0.55),
-            child: Text(
-              data.title,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                height: 1.2,
+            alignment: titleAlignment,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: _getResponsiveTextPadding(screenWidth)),
+              child: Text(
+                data.title,
+                style: TextStyle(
+                  fontSize: responsiveTitleFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                  height: 1.2,
+                ),
+                textAlign: _getTextAlign(screenWidth),
+                overflow: TextOverflow.visible,
               ),
             ),
           ),
 
-          // Subtitle Text
           Align(
-            alignment: Alignment(-0.7, 0.9),
-            child: Text(
-              data.subtitle,
-              style: TextStyle(
-                fontSize: 17,
-                color: AppColors.textSecondary,
-                height: 1.5,
+            alignment: subtitleAlignment,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: _getResponsiveTextPadding(screenWidth)),
+              child: Text(
+                data.subtitle,
+                style: TextStyle(
+                  fontSize: responsiveSubtitleFontSize,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: _getTextAlign(screenWidth),
+                overflow: TextOverflow.visible,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  double _getResponsivePhoneImageHeight(double screenHeight) {
+    if (screenHeight < 600) return 280.0;
+    if (screenHeight < 700) return 320.0;
+    if (screenHeight < 800) return 360.0;
+    return 380.0;
+  }
+
+  double _getResponsivePersonImageHeight(double screenHeight) {
+    if (screenHeight < 600) return 300.0;
+    if (screenHeight < 700) return 340.0;
+    if (screenHeight < 800) return 380.0;
+    return 405.0;
+  }
+
+  double _getResponsiveTitleFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize;
+    if (screenWidth < 400) {
+      baseFontSize = 24.0;
+    } else if (screenWidth < 600) {
+      baseFontSize = 28.0;
+    } else {
+      baseFontSize = 32.0;
+    }
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.3);
+  }
+
+  double _getResponsiveSubtitleFontSize(double screenWidth, TextScaler textScaler) {
+    double baseFontSize;
+    if (screenWidth < 400) {
+      baseFontSize = 14.0;
+    } else if (screenWidth < 600) {
+      baseFontSize = 16.0;
+    } else {
+      baseFontSize = 17.0;
+    }
+    return baseFontSize * textScaler.scale(1.0).clamp(0.8, 1.2);
+  }
+
+  double _getResponsiveIconSize(double screenWidth) {
+    if (screenWidth < 400) return 60.0;
+    if (screenWidth < 600) return 70.0;
+    return 80.0;
+  }
+
+  double _getResponsiveTextPadding(double screenWidth) {
+    if (screenWidth < 400) return 20.0;
+    if (screenWidth < 600) return 24.0;
+    return 32.0;
+  }
+
+  Alignment _getPhoneAlignment(double screenWidth, double screenHeight) {
+    if (screenWidth < 400) {
+      return Alignment(-0.5, -0.7);
+    } else if (screenHeight < 600) {
+      return Alignment(-0.6, -0.75);
+    }
+    return Alignment(-0.7, -0.8);
+  }
+
+  Alignment _getPersonAlignment(double screenWidth, double screenHeight) {
+    if (screenWidth < 400) {
+      return Alignment(-0.7, 0.15);
+    } else if (screenHeight < 600) {
+      return Alignment(-0.8, 0.2);
+    }
+    return Alignment(-0.9, 0.25);
+  }
+
+  Alignment _getTitleAlignment(double screenWidth, double screenHeight) {
+    if (screenWidth < 400) {
+      return Alignment(-0.5, 0.45);
+    } else if (screenHeight < 600) {
+      return Alignment(-0.6, 0.5);
+    }
+    return Alignment(-0.7, 0.55);
+  }
+
+  Alignment _getSubtitleAlignment(double screenWidth, double screenHeight) {
+    if (screenWidth < 400) {
+      return Alignment(-0.5, 0.75);
+    } else if (screenHeight < 600) {
+      return Alignment(-0.6, 0.8);
+    }
+    return Alignment(-0.7, 0.9);
+  }
+
+  TextAlign _getTextAlign(double screenWidth) {
+    return screenWidth < 400 ? TextAlign.center : TextAlign.left;
   }
 }

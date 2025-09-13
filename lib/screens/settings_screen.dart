@@ -233,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildPremiumPromotionCard() {
+ Widget _buildPremiumPromotionCard() {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -254,6 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
               Icon(Icons.star, color: Colors.white, size: 24),
@@ -268,7 +269,10 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
             ],
           ),
+
           SizedBox(height: 12),
+
+          // Description
           Text(
             'Unlock unlimited subscriptions, 2 years of history, and advanced analytics.',
             style: TextStyle(
@@ -276,7 +280,133 @@ class _SettingsScreenState extends State<SettingsScreen>
               color: Colors.white.withOpacity(0.9),
             ),
           ),
+
           SizedBox(height: 16),
+
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                // Monthly Plan
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_month,
+                          color: Colors.white.withOpacity(0.8),
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Monthly Plan',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '\$0.99/month',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 12),
+
+                // Divider
+                Container(height: 1, color: Colors.white.withOpacity(0.2)),
+
+                SizedBox(height: 12),
+
+                // Yearly Plan with Popular Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_view_month,
+                          color: Colors.white.withOpacity(0.8),
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Yearly Plan',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        // Popular Badge
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'SAVE 50%',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '\$5.99/year',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'was \$11.88',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.7),
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 16),
+
+          // Upgrade Button
           Row(
             children: [
               Expanded(
@@ -285,13 +415,24 @@ class _SettingsScreenState extends State<SettingsScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppColors.secondary,
+                    padding: EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Upgrade Now',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Upgrade Now',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward, size: 18),
+                    ],
                   ),
                 ),
               ),
@@ -657,8 +798,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           children: [
             Text('Need help with SubVault?'),
             SizedBox(height: 16),
-            Text('• Email: support@subvault.app'),
-            Text('• Website: www.subvault.app/help'),
+            Text('• Email: spadetech2024@gmail.com'),
+            Text('• Website: Coming soon'),
             Text('• FAQ: Available in the app'),
           ],
         ),

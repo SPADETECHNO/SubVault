@@ -201,51 +201,304 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.star,
-                size: 80,
-                color: AppColors.secondary,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 20),
+
+            // Premium Icon
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.secondary,
+                    AppColors.secondary.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(50),
               ),
-              SizedBox(height: 24),
-              Text(
-                'Upgrade to Premium',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              child: Icon(Icons.star, size: 60, color: Colors.white),
+            ),
+
+            SizedBox(height: 24),
+
+            // Title
+            Text(
+              'Upgrade to Premium',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: 12),
+
+            // Subtitle
+            Text(
+              'You\'ve reached the limit of ${AppConstants.freeSubscriptionLimit} subscriptions.\nUpgrade to Premium for unlimited subscriptions!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+
+            SizedBox(height: 32),
+
+            _buildPricingCards(),
+
+            SizedBox(height: 32),
+
+            // Features List
+            // _buildFeaturesList(),
+
+            SizedBox(height: 32),
+
+            // Action Buttons
+            // PrimaryButton(
+            //   text: 'Start Free Trial',
+            //   onPressed: () => _upgradeToPremium(isMonthly: true),
+            //   icon: Icons.star,
+            //   height: 56,
+            // ),
+
+            SizedBox(height: 12),
+
+            SecondaryButton(
+              text: 'Maybe Later',
+              onPressed: () => Navigator.pop(context),
+              height: 48,
+            ),
+
+            SizedBox(height: 20),
+
+            // Terms
+            Text(
+              '• Cancel anytime\n• No commitment\n• Full access to all features',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPricingCards() {
+    return Column(
+      children: [
+        Text(
+          'Choose Your Plan',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+
+        SizedBox(height: 16),
+
+        Row(
+          children: [
+            // Monthly Plan
+            Expanded(
+              child: _buildPricingCard(
+                title: 'Monthly',
+                price: '\$0.99',
+                period: 'per month',
+                features: [
+                  'Unlimited subscriptions',
+                  '2 Years of history',
+                  'Advanced analytics',
+                ],
+                isPopular: false,
+                onTap: () => _upgradeToPremium(isMonthly: true),
+              ),
+            ),
+
+            SizedBox(width: 12),
+
+            // Yearly Plan (Popular)
+            Expanded(
+              child: _buildPricingCard(
+                title: 'Yearly',
+                price: '\$5.99',
+                period: 'per year',
+                originalPrice: '\$11.88',
+                savings: 'Save 50%',
+                features: [
+                  'Everything in Monthly',
+                  'Priority support',
+                  'Early access features',
+                ],
+                isPopular: true,
+                onTap: () => _upgradeToPremium(isMonthly: false),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPricingCard({
+    required String title,
+    required String price,
+    required String period,
+    String? originalPrice,
+    String? savings,
+    required List<String> features,
+    required bool isPopular,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isPopular ? AppColors.secondary : AppColors.divider,
+            width: isPopular ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Popular Badge
+            if (isPopular)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'MOST POPULAR',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
-                'You\'ve reached the limit of ${AppConstants.freeSubscriptionLimit} subscriptions.\nUpgrade to Premium for unlimited subscriptions!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
+
+            if (isPopular) SizedBox(height: 12),
+
+            // Title
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+
+            SizedBox(height: 8),
+
+            // Price
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  price,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isPopular ? AppColors.secondary : AppColors.primary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 32),
-              _buildFeaturesList(),
-              SizedBox(height: 32),
-              PrimaryButton(
-                text: 'Upgrade to Premium',
-                onPressed: _upgradeToPremium,
-                icon: Icons.star,
-              ),
-              SizedBox(height: 16),
-              SecondaryButton(
-                text: 'Maybe Later',
-                onPressed: () => Navigator.pop(context),
+                SizedBox(width: 4),
+                Text(
+                  period,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+
+            // Original Price & Savings
+            if (originalPrice != null && savings != null) ...[
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Text(
+                    originalPrice,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      savings,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
+
+            SizedBox(height: 16),
+
+            // Features
+            ...features
+                .map(
+                  (feature) => Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check, size: 16, color: AppColors.success),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            feature,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ],
         ),
       ),
     );
@@ -253,14 +506,30 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
 
   Widget _buildFeaturesList() {
     final features = [
-      'Unlimited subscriptions',
-      '2 years of history',
-      'Advanced analytics',
-      'Priority support',
+      {
+        'icon': Icons.all_inclusive,
+        'title': 'Unlimited Subscriptions',
+        'subtitle': 'Track as many services as you want',
+      },
+      {
+        'icon': Icons.history,
+        'title': '2 Years of History',
+        'subtitle': 'Access your complete payment history',
+      },
+      {
+        'icon': Icons.analytics,
+        'title': 'Advanced Analytics',
+        'subtitle': 'Detailed spending insights and trends',
+      },
+      {
+        'icon': Icons.support_agent,
+        'title': 'Priority Support',
+        'subtitle': 'Get help when you need it most',
+      },
     ];
 
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -273,22 +542,69 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
         ],
       ),
       child: Column(
-        children: features.map((feature) => Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, color: AppColors.success, size: 20),
-              SizedBox(width: 12),
-              Text(
-                feature,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Premium Features',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
-        )).toList(),
+
+          SizedBox(height: 16),
+
+          ...features
+              .map(
+                (feature) => Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          feature['icon'] as IconData,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+
+                      SizedBox(width: 16),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              feature['title'] as String,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              feature['subtitle'] as String,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+        ],
       ),
     );
   }
@@ -935,19 +1251,40 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen>
     }
   }
 
-  Future<void> _upgradeToPremium() async {
+Future<void> _upgradeToPremium({bool isMonthly = true}) async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final success = await RevenueCatService.purchaseMonthlyPremium();
+      bool success;
+
+      if (isMonthly) {
+        success = await RevenueCatService.purchaseMonthlyPremium();
+      } else {
+        success =
+            await RevenueCatService.purchaseYearlyPremium();
+      }
+
       if (success) {
         setState(() {
           _isPremium = true;
         });
         _showSuccessSnackBar('Welcome to Premium! 🎉');
+
+        // Navigate back or to success screen
+        Navigator.pop(context, true);
       } else {
         _showErrorSnackBar('Purchase was cancelled or failed');
       }
     } catch (e) {
-      _showErrorSnackBar('Failed to upgrade to Premium');
+      _showErrorSnackBar('Failed to upgrade to Premium: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
