@@ -7,11 +7,16 @@ import 'services/revenue_cat_service.dart';
 import 'screens/splash_screen.dart';
 import 'utils/constants.dart';
 
+// Import generated firebase options
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Initialize Firebase with proper platform options
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   // Initialize services
   await NotificationService.initialize();
